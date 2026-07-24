@@ -11,7 +11,7 @@ flowchart TD
 
     Choose -- Sửa --> EditForm[Mở form sửa,\nprefill content_text/open_at/\nfollow_up_question hiện tại]
     EditForm --> EditFields[User chỉnh nội dung]
-    EditFields --> SubmitEdit[Tap "Lưu thay đổi"]
+    EditFields --> SubmitEdit[Tap Lưu thay đổi]
     SubmitEdit --> ValidateEdit{Validate lại\nnhư lúc tạo hộp}
     ValidateEdit -- Sai --> ErrEdit[Hiện lỗi inline]
     ErrEdit --> EditForm
@@ -19,8 +19,8 @@ flowchart TD
     CheckNet1 -- Không --> ErrOffline1[Báo cần mạng để lưu]
     ErrOffline1 --> EditForm
     CheckNet1 -- Có --> CallUpdateRPC[Gọi RPC update_box\n- server kiểm tra lại\nnow() < open_at hiện tại]
-    CallUpdateRPC --> ServerCheckEdit{Hộp vẫn còn\n"Đang khóa"\ntheo server time?}
-    ServerCheckEdit -- Đã hết hạn sửa\n(giữa lúc user đang gõ) --> ErrExpired[Báo "Hộp đã đến hạn mở,\nkhông thể sửa nữa"]
+    CallUpdateRPC --> ServerCheckEdit{Hộp vẫn còn\nĐang khóa\ntheo server time?}
+    ServerCheckEdit -- Đã hết hạn sửa, giữa lúc user đang gõ --> ErrExpired[Báo Hộp đã đến hạn mở,\nkhông thể sửa nữa]
     ErrExpired --> BackToList1[Quay về Danh sách,\nhộp giờ ở trạng thái Sẵn sàng mở]
     BackToList1 --> End2([Kết thúc])
     ServerCheckEdit -- Còn hạn --> SaveEdit[Cập nhật content_text/\nopen_at/follow_up_question]
@@ -30,7 +30,7 @@ flowchart TD
     SaveEditResult -- Có --> BackToList2[Quay về Danh sách,\nhiển thị nội dung mới]
     BackToList2 --> End3([Kết thúc])
 
-    Choose -- Xóa --> ConfirmDialog[Hiện dialog xác nhận\n"Bạn chắc chắn muốn xóa?"]
+    Choose -- Xóa --> ConfirmDialog[Hiện dialog xác nhận\nBạn chắc chắn muốn xóa?]
     ConfirmDialog --> ConfirmChoice{User xác nhận?}
     ConfirmChoice -- Hủy --> End4([Kết thúc, không làm gì])
     ConfirmChoice -- Đồng ý --> CheckNet2{Có mạng?}
@@ -38,7 +38,7 @@ flowchart TD
     ErrOffline2 --> End5([Kết thúc])
     CheckNet2 -- Có --> CallDelete[Gọi delete boxes\nRLS: chỉ xóa được hộp\ncủa chính user, còn Đang khóa]
     CallDelete --> DeleteResult{Xóa thành công?}
-    DeleteResult -- Không (đã hết hạn khóa\ngiữa lúc confirm) --> ErrDeleteExpired[Báo "Hộp đã đến hạn mở,\nkhông thể xóa nữa"]
+    DeleteResult -- Không, đã hết hạn khóa giữa lúc confirm --> ErrDeleteExpired[Báo Hộp đã đến hạn mở,\nkhông thể xóa nữa]
     ErrDeleteExpired --> BackToList3[Quay về Danh sách,\nrefresh trạng thái]
     BackToList3 --> End6([Kết thúc])
     DeleteResult -- Có --> RemoveFromList[Xóa row boxes\n+ cascade box_attachments]

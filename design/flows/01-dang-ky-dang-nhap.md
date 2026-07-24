@@ -26,7 +26,7 @@ flowchart TD
     ErrLogin1 --> LoginForm
     ValidateLogin -- Có --> SubmitLogin[Gọi Supabase Auth signInWithPassword]
     SubmitLogin --> LoginResult{Kết quả}
-    LoginResult -- Sai email/mật khẩu --> ErrWrong[Báo lỗi rõ ràng:\n"Email hoặc mật khẩu không đúng"]
+    LoginResult -- Sai email/mật khẩu --> ErrWrong[Báo lỗi rõ ràng:\nEmail hoặc mật khẩu không đúng]
     ErrWrong --> LoginForm
     LoginResult -- Mất mạng --> ErrNet2[Báo lỗi kết nối, không crash]
     ErrNet2 --> LoginForm

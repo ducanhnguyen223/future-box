@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart TD
-    Start([Tap "Tạo hộp mới"\ntừ Danh sách hộp]) --> Form[Màn tạo hộp]
+    Start([Tap Tạo hộp mới\ntừ Danh sách hộp]) --> Form[Màn tạo hộp]
     Form --> InputText[Nhập content_text]
     InputText --> PickDate[Chọn open_at]
     PickDate --> OptPhoto{Đính kèm ảnh?}
@@ -10,7 +10,7 @@ flowchart TD
     PickImage --> OptFollow
     OptPhoto -- Không --> OptFollow{Thêm câu hỏi\nfollow-up?}
     OptFollow -- Có --> InputQuestion[Nhập follow_up_question]
-    InputQuestion --> Submit[Tap "Lưu"]
+    InputQuestion --> Submit[Tap Lưu]
     OptFollow -- Không --> Submit
 
     Submit --> Validate{Validate:\n- text 1-2000 ký tự\n- open_at là ngày tương lai\n- ảnh ≤5MB, JPEG/PNG (nếu có)\n- câu hỏi ≤200 ký tự (nếu có)}
@@ -18,7 +18,7 @@ flowchart TD
     ShowErr --> Form
 
     Validate -- Đúng --> CheckNet{Có mạng?}
-    CheckNet -- Không --> ErrOffline[Báo "Cần kết nối mạng để tạo hộp"]
+    CheckNet -- Không --> ErrOffline[Báo cần kết nối mạng để tạo hộp]
     ErrOffline --> Form
 
     CheckNet -- Có --> HasImage{Có ảnh?}
@@ -33,7 +33,7 @@ flowchart TD
     InsertBox2 --> InsertResult
     InsertResult -- Không --> ErrInsert[Báo lỗi lưu hộp, giữ nguyên form]
     ErrInsert --> Form
-    InsertResult -- Có --> Success[Hộp ở trạng thái "Đang khóa"]
+    InsertResult -- Có --> Success[Hộp ở trạng thái Đang khóa]
     Success --> BackToList[Quay về Danh sách hộp,\nhiển thị hộp mới]
     BackToList --> End([Kết thúc])
 ```

@@ -4,7 +4,7 @@
 flowchart TD
     Start([Vào màn Danh sách hộp]) --> CheckNet{Có mạng?}
     CheckNet -- Không --> LoadCache[Load dữ liệu hộp đã cache\ntừ lần load gần nhất]
-    LoadCache --> ShowOfflineBanner[Hiện banner "Đang offline -\ndữ liệu có thể chưa mới nhất"]
+    LoadCache --> ShowOfflineBanner[Hiện banner Đang offline -\ndữ liệu có thể chưa mới nhất]
     ShowOfflineBanner --> RenderList
 
     CheckNet -- Có --> FetchBoxes[Query boxes_with_status\ncủa user hiện tại]
@@ -28,7 +28,7 @@ flowchart TD
     TapOpened --> ViewReadonly[Xem lại nội dung + câu trả lời\nfollow-up (read-only)]
 
     RenderList --> Empty{Không có hộp nào?}
-    Empty -- Đúng --> EmptyState[Hiện empty state,\nCTA "Tạo hộp mới"]
+    Empty -- Đúng --> EmptyState[Hiện empty state,\nCTA Tạo hộp mới]
 
     RenderList --> Pull[User pull-to-refresh]
     Pull --> FetchBoxes

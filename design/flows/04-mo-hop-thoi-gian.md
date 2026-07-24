@@ -2,15 +2,15 @@
 
 ```mermaid
 flowchart TD
-    Start([Tap hộp "Sẵn sàng mở"\ntừ Danh sách hộp]) --> CheckNet{Có mạng?}
-    CheckNet -- Không --> ErrOffline[Báo "Cần kết nối mạng\nđể mở hộp"]
+    Start([Tap hộp Sẵn sàng mở\ntừ Danh sách hộp]) --> CheckNet{Có mạng?}
+    CheckNet -- Không --> ErrOffline[Báo cần kết nối mạng\nđể mở hộp]
     ErrOffline --> End1([Kết thúc])
 
-    CheckNet -- Có --> CallOpenRPC[Gọi Edge Function/RPC\n"open_box" - dùng now() SERVER,\nkhông dùng giờ máy client]
+    CheckNet -- Có --> CallOpenRPC[Gọi Edge Function/RPC\nopen_box - dùng now SERVER,\nkhông dùng giờ máy client]
     CallOpenRPC --> ServerCheck{Server so sánh\nnow() >= open_at?}
 
     ServerCheck -- Chưa đến hạn --> Blocked[Trả về: còn bao lâu nữa\nmới mở được]
-    Blocked --> ShowCountdown[Hiển thị "Còn X giờ/ngày nữa"\nkhông cho xem nội dung]
+    Blocked --> ShowCountdown[Hiển thị Còn X giờ/ngày nữa,\nkhông cho xem nội dung]
     ShowCountdown --> End2([Kết thúc])
 
     ServerCheck -- Đủ điều kiện --> AlreadyOpened{opened_at\nđã có sẵn?}
@@ -21,7 +21,7 @@ flowchart TD
     RevealContent --> HasFollowUp{Có follow_up_question?}
 
     HasFollowUp -- Không --> MarkOpened[Server set opened_at = now()]
-    MarkOpened --> Celebrate1[Đánh dấu "Đã mở",\nkhông có bước trả lời]
+    MarkOpened --> Celebrate1[Đánh dấu Đã mở,\nkhông có bước trả lời]
     Celebrate1 --> End4([Kết thúc])
 
     HasFollowUp -- Có --> ShowQuestion[Hiển thị câu hỏi,\nyêu cầu chọn Yes/No]
@@ -37,7 +37,7 @@ flowchart TD
     SaveNo --> SaveResultN{Lưu thành công?}
     SaveResultN -- Không --> ErrSave2[Báo lỗi, cho thử lại]
     ErrSave2 --> ForceAnswer
-    SaveResultN -- Có --> NoEffect[Đánh dấu "Đã mở",\nkhông có hiệu ứng chúc mừng]
+    SaveResultN -- Có --> NoEffect[Đánh dấu Đã mở,\nkhông có hiệu ứng chúc mừng]
     NoEffect --> End6([Kết thúc])
 ```
 
