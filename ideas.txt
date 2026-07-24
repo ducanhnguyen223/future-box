@@ -1,0 +1,6 @@
+Tôi muốn tạo một ứng dụng mobile đa nền tảng. Ý tưởng chính là gửi tin nhắn cho chính mình trong tương lai.
+Người dùng tạo những "hộp thời gian" chứa suy nghĩ, kỷ nhiệm, mục tiêu, lời nhắn nhủ rồi khóa lại. Chỉ khi đến đúng ngày đã chọn, chiếc hộp mới mở ra.
+Người dùng có thể ghi lại cảm xúc, suy nghĩ của ngày hôm nay và gửi chính mình trong tương lai. Ví dụ: "Đang ôn thi ngập đầu. Hy vọng là kết quả tốt". Gửi đến chính mình 1 tuần sau. Sau 1 tuần, hộp có thể được mở ra. Người dùng đọc được dòng nhắn nhủ và có thể chọn trả lời câu hỏi "Kết quả tốt chứ?" (Yes/No) và có  hiệu ứng chúc mừng khi chọn Yes.
+Người dùng có thể đặt mục tiêu sau 1 tháng giảm cân và 1 tháng sau mở hộp trả lời câu hỏi đã giảm cân chưa.
+Người dùng có thể lưu ảnh và ghi chú về khoảnh khắc đáng nhớ, chọn thời gian mở ra và lời nhắn.
+Người dùng có thể tạo hộp nhật ký ra quyết định. Khi đứng trước 1 quyết định quan trọng cần cân nhắc ví dụ chuyển việc. 1 tháng (1 năm) sau mở ra đánh giá quyết định đúng hay sai.
