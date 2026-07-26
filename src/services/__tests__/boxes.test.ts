@@ -3,13 +3,21 @@ const mockRemove = jest.fn();
 const mockStorageFrom = jest.fn((..._args: unknown[]) => ({ upload: mockUpload, remove: mockRemove }));
 
 const mockSingle = jest.fn();
+const mockMaybeSingle = jest.fn();
 const mockOrder = jest.fn();
-const mockQueryEq = jest.fn(() => ({ order: mockOrder }));
+const mockQueryEq = jest.fn(() => ({ order: mockOrder, maybeSingle: mockMaybeSingle }));
 const mockSelect = jest.fn(() => ({ single: mockSingle, eq: mockQueryEq }));
 const mockInsert = jest.fn(() => ({ select: mockSelect }));
 const mockEq = jest.fn();
 const mockDelete = jest.fn(() => ({ eq: mockEq }));
-const mockFrom = jest.fn((..._args: unknown[]) => ({ insert: mockInsert, delete: mockDelete, select: mockSelect }));
+const mockUpdateEq = jest.fn(() => ({ select: mockSelect }));
+const mockUpdate = jest.fn(() => ({ eq: mockUpdateEq }));
+const mockFrom = jest.fn((..._args: unknown[]) => ({
+  insert: mockInsert,
+  delete: mockDelete,
+  select: mockSelect,
+  update: mockUpdate,
+}));
 
 // Wrap in closures (not direct references) so the mock factory doesn't capture
 // these consts' values before they're initialized — jest hoists jest.mock()
@@ -23,10 +31,12 @@ jest.mock('@/lib/supabase', () => ({
 
 import {
   deleteBox,
+  deleteBoxAndAttachment,
   deleteBoxPhoto,
   fetchBoxesWithStatus,
   insertBox,
   insertBoxAttachment,
+  updateBox,
   uploadBoxPhoto,
 } from '@/services/boxes';
 
@@ -160,5 +170,71 @@ describe('boxes service', () => {
     expect(mockFrom).toHaveBeenCalledWith('boxes');
     expect(mockDelete).toHaveBeenCalled();
     expect(mockEq).toHaveBeenCalledWith('id', 'box-1');
+  });
+
+  describe('updateBox', () => {
+    it('updates content_text/open_at/follow_up_question and returns the updated box', async () => {
+      const box = { id: 'box-1', content_text: 'updated' };
+      mockSingle.mockResolvedValue({ data: box, error: null });
+
+      const result = await updateBox('box-1', {
+        contentText: 'updated',
+        openAt: '2030-01-01T00:00:00.000Z',
+        followUpQuestion: null,
+      });
+
+      expect(mockFrom).toHaveBeenCalledWith('boxes');
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ content_text: 'updated', follow_up_question: null })
+      );
+      expect(mockUpdateEq).toHaveBeenCalledWith('id', 'box-1');
+      expect(result).toEqual(box);
+    });
+
+    it('throws when the DB guard trigger rejects the update (box no longer locked)', async () => {
+      mockSingle.mockResolvedValue({
+        data: null,
+        error: new Error('box is locked-expired or already opened, cannot edit content/open_at/follow_up_question'),
+      });
+
+      await expect(
+        updateBox('box-1', { contentText: 'x', openAt: '2030-01-01T00:00:00.000Z', followUpQuestion: null })
+      ).rejects.toThrow(/locked-expired/);
+    });
+  });
+
+  describe('deleteBoxAndAttachment', () => {
+    it('deletes the box and cleans up the attached photo in Storage', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: { storage_path: 'user-1/abc.jpg' }, error: null });
+      mockEq.mockResolvedValue({ data: null, error: null });
+      mockRemove.mockResolvedValue({ data: null, error: null });
+
+      await deleteBoxAndAttachment('box-1');
+
+      expect(mockFrom).toHaveBeenCalledWith('box_attachments');
+      expect(mockFrom).toHaveBeenCalledWith('boxes');
+      expect(mockStorageFrom).toHaveBeenCalledWith('box-photos');
+      expect(mockRemove).toHaveBeenCalledWith(['user-1/abc.jpg']);
+    });
+
+    it('deletes the box without touching Storage when there is no attachment', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+      mockEq.mockResolvedValue({ data: null, error: null });
+
+      await deleteBoxAndAttachment('box-1');
+
+      expect(mockRemove).not.toHaveBeenCalled();
+    });
+
+    it('throws and does not touch Storage when the DB guard trigger rejects the delete', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: { storage_path: 'user-1/abc.jpg' }, error: null });
+      mockEq.mockResolvedValue({
+        data: null,
+        error: new Error('box is locked-expired or already opened, cannot delete'),
+      });
+
+      await expect(deleteBoxAndAttachment('box-1')).rejects.toThrow(/locked-expired/);
+      expect(mockRemove).not.toHaveBeenCalled();
+    });
   });
 });

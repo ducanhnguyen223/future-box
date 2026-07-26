@@ -131,6 +131,58 @@ export async function openBox(boxId: string, followUpAnswer?: boolean): Promise<
   return data as Box;
 }
 
+// --- Sửa / Xóa hộp (Feature #7) ---
+
+export type UpdateBoxParams = {
+  contentText: string;
+  openAt: string;
+  followUpQuestion: string | null;
+};
+
+/**
+ * UPDATE thường qua RLS boxes_owner_update — không cần RPC riêng vì trigger DB
+ * guard_box_edit (migration 0001) đã tự raise exception nếu hộp đã opened/hết hạn
+ * lúc submit, chặn race condition (server time, không tin client).
+ */
+export async function updateBox(boxId: string, params: UpdateBoxParams): Promise<Box> {
+  const { data, error } = await supabase
+    .from('boxes')
+    .update({
+      content_text: params.contentText,
+      open_at: params.openAt,
+      follow_up_question: params.followUpQuestion,
+    })
+    .eq('id', boxId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Box;
+}
+
+/**
+ * Xóa hộp do user chủ động thao tác (khác `deleteBox` — dùng nội bộ để rollback lúc tạo hộp).
+ * Đọc storage_path của ảnh đính kèm (nếu có) TRƯỚC khi xóa row: nếu trigger guard_box_delete
+ * (migration 0002) reject vì hộp đã hết hạn/đã mở, ta throw ngay và không đụng tới Storage.
+ * Chỉ dọn file Storage sau khi xóa row thành công — cascade đã tự xóa box_attachments.
+ */
+export async function deleteBoxAndAttachment(boxId: string): Promise<void> {
+  const { data: attachment, error: fetchError } = await supabase
+    .from('box_attachments')
+    .select('storage_path')
+    .eq('box_id', boxId)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+
+  const { error: deleteError } = await supabase.from('boxes').delete().eq('id', boxId);
+  if (deleteError) throw deleteError;
+
+  if (attachment) {
+    await supabase.storage.from(PHOTOS_BUCKET).remove([attachment.storage_path]);
+  }
+}
+
 /** Ảnh đính kèm (nếu có) qua signed URL vì bucket box-photos là private theo RLS. */
 export async function fetchBoxAttachmentUrl(boxId: string): Promise<string | null> {
   const { data: attachment, error } = await supabase
