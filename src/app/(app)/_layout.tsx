@@ -5,6 +5,7 @@ export default function AppLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="create-box" options={{ headerShown: true, title: 'Tạo hộp mới' }} />
+      <Stack.Screen name="box/[id]" options={{ headerShown: true, title: 'Chi tiết hộp' }} />
     </Stack>
   );
 }

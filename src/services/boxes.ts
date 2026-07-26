@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Box, BoxAttachment } from '@/types/database';
+import type { Box, BoxAttachment, BoxWithStatus } from '@/types/database';
 
 const PHOTOS_BUCKET = 'box-photos';
 
@@ -72,6 +72,21 @@ export type InsertBoxAttachmentParams = {
   mimeType: 'image/jpeg' | 'image/png';
   sizeBytes: number;
 };
+
+/**
+ * Danh sách hộp (Feature #3): đọc từ view boxes_with_status (status derive server-side),
+ * sắp theo open_at tăng dần. RLS đã lọc theo auth.uid() nhưng vẫn truyền userId tường minh cho rõ ràng.
+ */
+export async function fetchBoxesWithStatus(userId: string): Promise<BoxWithStatus[]> {
+  const { data, error } = await supabase
+    .from('boxes_with_status')
+    .select('*')
+    .eq('user_id', userId)
+    .order('open_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as BoxWithStatus[];
+}
 
 export async function insertBoxAttachment(params: InsertBoxAttachmentParams): Promise<BoxAttachment> {
   const { data, error } = await supabase

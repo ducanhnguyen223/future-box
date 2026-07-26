@@ -3,11 +3,13 @@ const mockRemove = jest.fn();
 const mockStorageFrom = jest.fn((..._args: unknown[]) => ({ upload: mockUpload, remove: mockRemove }));
 
 const mockSingle = jest.fn();
-const mockSelect = jest.fn(() => ({ single: mockSingle }));
+const mockOrder = jest.fn();
+const mockQueryEq = jest.fn(() => ({ order: mockOrder }));
+const mockSelect = jest.fn(() => ({ single: mockSingle, eq: mockQueryEq }));
 const mockInsert = jest.fn(() => ({ select: mockSelect }));
 const mockEq = jest.fn();
 const mockDelete = jest.fn(() => ({ eq: mockEq }));
-const mockFrom = jest.fn((..._args: unknown[]) => ({ insert: mockInsert, delete: mockDelete }));
+const mockFrom = jest.fn((..._args: unknown[]) => ({ insert: mockInsert, delete: mockDelete, select: mockSelect }));
 
 // Wrap in closures (not direct references) so the mock factory doesn't capture
 // these consts' values before they're initialized — jest hoists jest.mock()
@@ -19,7 +21,14 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-import { deleteBox, deleteBoxPhoto, insertBox, insertBoxAttachment, uploadBoxPhoto } from '@/services/boxes';
+import {
+  deleteBox,
+  deleteBoxPhoto,
+  fetchBoxesWithStatus,
+  insertBox,
+  insertBoxAttachment,
+  uploadBoxPhoto,
+} from '@/services/boxes';
 
 describe('boxes service', () => {
   beforeEach(() => {
@@ -113,6 +122,34 @@ describe('boxes service', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('box_attachments');
     expect(result).toEqual(attachment);
+  });
+
+  describe('fetchBoxesWithStatus', () => {
+    it('queries boxes_with_status filtered by user and ordered by open_at', async () => {
+      const boxes = [{ id: 'box-1', status: 'locked' }];
+      mockOrder.mockResolvedValue({ data: boxes, error: null });
+
+      const result = await fetchBoxesWithStatus('user-1');
+
+      expect(mockFrom).toHaveBeenCalledWith('boxes_with_status');
+      expect(mockQueryEq).toHaveBeenCalledWith('user_id', 'user-1');
+      expect(mockOrder).toHaveBeenCalledWith('open_at', { ascending: true });
+      expect(result).toEqual(boxes);
+    });
+
+    it('returns an empty array when there is no data', async () => {
+      mockOrder.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchBoxesWithStatus('user-1');
+
+      expect(result).toEqual([]);
+    });
+
+    it('throws on query failure', async () => {
+      mockOrder.mockResolvedValue({ data: null, error: new Error('network request failed') });
+
+      await expect(fetchBoxesWithStatus('user-1')).rejects.toThrow('network request failed');
+    });
   });
 
   it('deleteBox removes the box row by id', async () => {
