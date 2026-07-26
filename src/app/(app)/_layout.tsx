@@ -1,6 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { useAuth } from '@/hooks/use-auth';
+import { usePushRegistration } from '@/hooks/use-push-registration';
+
 export default function AppLayout() {
+  const { session } = useAuth();
+  usePushRegistration(session?.user.id);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
