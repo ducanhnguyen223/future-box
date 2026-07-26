@@ -104,3 +104,48 @@ export async function insertBoxAttachment(params: InsertBoxAttachmentParams): Pr
   if (error) throw error;
   return data as BoxAttachment;
 }
+
+// --- Mở hộp thời gian (Feature #4) ---
+
+const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60; // 1 giờ, đủ cho một phiên xem hộp
+
+/** Đọc row hiện tại để biết trước open_at/opened_at/follow_up_question mà KHÔNG gọi RPC (RPC chỉ dùng để set opened_at). */
+export async function fetchBoxById(boxId: string): Promise<Box> {
+  const { data, error } = await supabase.from('boxes').select('*').eq('id', boxId).single();
+
+  if (error) throw error;
+  return data as Box;
+}
+
+/**
+ * Gọi RPC open_box: server tự kiểm tra now() >= open_at và ghi opened_at/follow_up_answer
+ * (chống gian lận giờ máy — client không tự quyết định). Idempotent nếu box đã mở.
+ */
+export async function openBox(boxId: string, followUpAnswer?: boolean): Promise<Box> {
+  const { data, error } = await supabase.rpc('open_box', {
+    p_box_id: boxId,
+    p_follow_up_answer: followUpAnswer ?? null,
+  });
+
+  if (error) throw error;
+  return data as Box;
+}
+
+/** Ảnh đính kèm (nếu có) qua signed URL vì bucket box-photos là private theo RLS. */
+export async function fetchBoxAttachmentUrl(boxId: string): Promise<string | null> {
+  const { data: attachment, error } = await supabase
+    .from('box_attachments')
+    .select('storage_path')
+    .eq('box_id', boxId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!attachment) return null;
+
+  const { data, error: signError } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .createSignedUrl(attachment.storage_path, SIGNED_URL_EXPIRES_IN_SECONDS);
+
+  if (signError) throw signError;
+  return data.signedUrl;
+}
