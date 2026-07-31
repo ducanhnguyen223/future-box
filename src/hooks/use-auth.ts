@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
 
-export type AuthResult = { error: string | null };
+export type AuthResult = { error: string | null; requiresEmailConfirmation?: boolean };
 
 function mapAuthError(error: unknown): string {
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
@@ -48,8 +48,9 @@ export function useAuth() {
 
   const signUp = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
-      return { error: error ? mapAuthError(error) : null };
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) return { error: mapAuthError(error) };
+      return data.session ? { error: null } : { error: null, requiresEmailConfirmation: true };
     } catch {
       return { error: NETWORK_ERROR_MESSAGE };
     }

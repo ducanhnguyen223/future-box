@@ -82,6 +82,19 @@ describe('useAuth', () => {
     expect(response).toEqual({ error: null });
   });
 
+  it('reports that email confirmation is required when signup succeeds without a session', async () => {
+    mockSignUp.mockResolvedValue({ data: { user: {}, session: null }, error: null });
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+
+    let response;
+    await act(async () => {
+      response = await result.current.signUp('new@example.com', 'secret123');
+    });
+
+    expect(response).toEqual({ error: null, requiresEmailConfirmation: true });
+  });
+
   it('reports a clear error when the email is already registered', async () => {
     mockSignUp.mockResolvedValue({
       data: { user: null, session: null },

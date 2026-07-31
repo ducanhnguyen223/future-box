@@ -17,6 +17,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false, confirmPassword: false });
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const emailError = touched.email && !isValidEmail(email) ? 'Email không hợp lệ.' : undefined;
@@ -38,12 +39,17 @@ export default function RegisterScreen() {
     }
 
     setFormError(null);
+    setSuccessMessage(null);
     setSubmitting(true);
-    const { error } = await signUp(email.trim(), password);
+    const { error, requiresEmailConfirmation } = await signUp(email.trim(), password);
     setSubmitting(false);
 
     if (error) {
       setFormError(error);
+    } else if (requiresEmailConfirmation) {
+      setSuccessMessage('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.');
+      setPassword('');
+      setConfirmPassword('');
     }
   };
 
@@ -57,57 +63,78 @@ export default function RegisterScreen() {
           Đăng ký
         </ThemedText>
 
-        {formError ? (
-          <ThemedView type="backgroundElement" style={styles.errorBanner}>
-            <ThemedText type="small" style={styles.errorText}>
-              {formError}
-            </ThemedText>
-          </ThemedView>
-        ) : null}
+        {successMessage ? (
+          <>
+            <ThemedView
+              type="backgroundElement"
+              style={styles.successBanner}
+              accessible
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              <ThemedText type="small" style={styles.successText}>
+                {successMessage}
+              </ThemedText>
+            </ThemedView>
+            <Link href="/(auth)/login" style={styles.link}>
+              <ThemedText type="linkPrimary">Đến màn đăng nhập</ThemedText>
+            </Link>
+          </>
+        ) : (
+          <>
+            {formError ? (
+              <ThemedView type="backgroundElement" style={styles.errorBanner}>
+                <ThemedText type="small" style={styles.errorText}>
+                  {formError}
+                </ThemedText>
+              </ThemedView>
+            ) : null}
 
-        <FormField
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          onBlur={() => setTouched((value) => ({ ...value, email: true }))}
-          error={emailError}
-          keyboardType="email-address"
-          placeholder="ban@example.com"
-        />
-        <FormField
-          label="Mật khẩu"
-          value={password}
-          onChangeText={setPassword}
-          onBlur={() => setTouched((value) => ({ ...value, password: true }))}
-          error={passwordError}
-          isPassword
-        />
-        <FormField
-          label="Xác nhận mật khẩu"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          onBlur={() => setTouched((value) => ({ ...value, confirmPassword: true }))}
-          error={confirmPasswordError}
-          isPassword
-        />
+            <FormField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              onBlur={() => setTouched((value) => ({ ...value, email: true }))}
+              error={emailError}
+              keyboardType="email-address"
+              placeholder="ban@example.com"
+            />
+            <FormField
+              label="Mật khẩu"
+              value={password}
+              onChangeText={setPassword}
+              onBlur={() => setTouched((value) => ({ ...value, password: true }))}
+              error={passwordError}
+              isPassword
+            />
+            <FormField
+              label="Xác nhận mật khẩu"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              onBlur={() => setTouched((value) => ({ ...value, confirmPassword: true }))}
+              error={confirmPasswordError}
+              isPassword
+            />
 
-        <Pressable
-          onPress={handleSubmit}
-          disabled={submitting}
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <ThemedText type="default" style={styles.submitLabel}>
-              Đăng ký
-            </ThemedText>
-          )}
-        </Pressable>
+            <Pressable
+              onPress={handleSubmit}
+              disabled={submitting}
+              style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <ThemedText type="default" style={styles.submitLabel}>
+                  Đăng ký
+                </ThemedText>
+              )}
+            </Pressable>
 
-        <Link href="/(auth)/login" style={styles.link}>
-          <ThemedText type="linkPrimary">Đã có tài khoản? Đăng nhập</ThemedText>
-        </Link>
+            <Link href="/(auth)/login" style={styles.link}>
+              <ThemedText type="linkPrimary">Đã có tài khoản? Đăng nhập</ThemedText>
+            </Link>
+          </>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -141,6 +168,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#d92d20',
+  },
+  successBanner: {
+    borderRadius: Spacing.two,
+    padding: Spacing.three,
+    backgroundColor: '#e6f4ea',
+  },
+  successText: {
+    color: '#137333',
   },
   submitButton: {
     backgroundColor: '#208AEF',
