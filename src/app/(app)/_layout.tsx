@@ -22,6 +22,7 @@ export default function AppLayout() {
       <Stack.Screen name="create-box" options={{ headerShown: true, title: 'Tạo hộp mới' }} />
       <Stack.Screen name="box/[id]" options={{ headerShown: true, title: 'Chi tiết hộp' }} />
       <Stack.Screen name="box/[id]/edit" options={{ headerShown: true, title: 'Sửa hộp' }} />
+      <Stack.Screen name="settings" options={{ headerShown: true, title: 'Cài đặt' }} />
     </Stack>
   );
 }

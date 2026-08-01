@@ -28,7 +28,7 @@ function openedMeta(box: BoxWithStatus): string | undefined {
 }
 
 export default function BoxListScreen() {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
   const { loading, refreshing, offline, locked, ready, opened, refresh } = useBoxList(session?.user.id);
 
   const sections = [
@@ -49,8 +49,8 @@ export default function BoxListScreen() {
       <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <View style={styles.header}>
           <ThemedText type="title">Hộp của tôi</ThemedText>
-          <Pressable onPress={signOut} hitSlop={8}>
-            <ThemedText type="linkPrimary">Đăng xuất</ThemedText>
+          <Pressable onPress={() => router.push('/(app)/settings')} hitSlop={8}>
+            <ThemedText type="linkPrimary">Cài đặt</ThemedText>
           </Pressable>
         </View>
 

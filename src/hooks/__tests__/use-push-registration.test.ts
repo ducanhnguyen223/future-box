@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mockGetPermissionsAsync = jest.fn();
@@ -24,7 +24,7 @@ jest.mock('@/services/push-tokens', () => ({
   upsertPushToken: (...args: unknown[]) => mockUpsertPushToken(...args),
 }));
 
-import { usePushRegistration } from '@/hooks/use-push-registration';
+import { usePushRegistration, useNotificationPermission } from '@/hooks/use-push-registration';
 
 const USER_ID = 'user-1';
 
@@ -97,5 +97,53 @@ describe('usePushRegistration', () => {
     listener({ notification: { request: { content: { data: { boxId: 'box-42' } } } } });
 
     expect(mockRouterPush).toHaveBeenCalledWith('/(app)/box/box-42');
+  });
+});
+
+describe('useNotificationPermission', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    mockUpsertPushToken.mockResolvedValue({ id: 'token-1' });
+    mockGetExpoPushTokenAsync.mockResolvedValue({ data: 'ExponentPushToken[abc]' });
+    await AsyncStorage.clear();
+  });
+
+  it('reflects the current OS permission on mount', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
+
+    const { result } = renderHook(() => useNotificationPermission(USER_ID));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.enabled).toBe(true);
+  });
+
+  it('enable() requests permission and registers the token, then reflects granted', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+
+    const { result } = renderHook(() => useNotificationPermission(USER_ID));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.enable();
+    });
+
+    expect(mockUpsertPushToken).toHaveBeenCalledTimes(1);
+    expect(result.current.enabled).toBe(true);
+  });
+
+  it('enable() leaves enabled false when the user denies permission', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'denied' });
+
+    const { result } = renderHook(() => useNotificationPermission(USER_ID));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.enable();
+    });
+
+    expect(mockUpsertPushToken).not.toHaveBeenCalled();
+    expect(result.current.enabled).toBe(false);
   });
 });

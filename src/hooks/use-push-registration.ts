@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
@@ -23,14 +24,18 @@ async function getOrCreateDeviceId(): Promise<string> {
   return generated;
 }
 
-async function registerForPushNotifications(userId: string): Promise<void> {
+/**
+ * Xin quyền notification (nếu chưa có) rồi lấy Expo push token và lưu vào push_tokens.
+ * Trả về true nếu quyền được cấp (kể cả khi đã cấp sẵn từ trước), false nếu user từ chối.
+ * Từ chối quyền: không lấy token, không upsert, không lỗi/crash (đúng AC #6).
+ */
+export async function registerPushToken(userId: string): Promise<boolean> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== 'granted') {
     ({ status: finalStatus } = await Notifications.requestPermissionsAsync());
   }
-  // Từ chối quyền: không lấy token, không upsert, không lỗi/crash (đúng AC #6).
-  if (finalStatus !== 'granted') return;
+  if (finalStatus !== 'granted') return false;
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync(
@@ -39,6 +44,7 @@ async function registerForPushNotifications(userId: string): Promise<void> {
   const deviceId = await getOrCreateDeviceId();
 
   await upsertPushToken({ userId, expoPushToken, deviceId });
+  return true;
 }
 
 /**
@@ -53,7 +59,7 @@ export function usePushRegistration(userId: string | undefined): void {
     if (!userId || registeredForUserId.current === userId) return;
     registeredForUserId.current = userId;
 
-    registerForPushNotifications(userId).catch(() => {
+    registerPushToken(userId).catch(() => {
       // ponytail: đăng ký push là phụ trợ — lỗi mạng/permission không được làm crash app.
     });
   }, [userId]);
@@ -67,4 +73,40 @@ export function usePushRegistration(userId: string | undefined): void {
     });
     return () => subscription.remove();
   }, []);
+}
+
+/**
+ * Cho màn Cài đặt: đọc trạng thái quyền notification hiện tại + cho user chủ động bật.
+ * Không thể tắt quyền từ trong app (hệ điều hành không cho) — nếu đã cấp, dẫn ra Cài đặt hệ thống.
+ */
+export function useNotificationPermission(userId: string | undefined) {
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setEnabled(status === 'granted');
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const enable = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const granted = await registerPushToken(userId);
+      setEnabled(granted);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  const openSystemSettings = useCallback(() => {
+    Linking.openSettings();
+  }, []);
+
+  return { enabled, loading, enable, openSystemSettings, refresh };
 }
