@@ -1,40 +1,30 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AirmailStripe } from '@/components/paper/airmail-stripe';
+import { PaperCard } from '@/components/paper/paper-card';
+import { SectionLabel } from '@/components/paper/section-label';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBoxList } from '@/hooks/use-box-list';
 import type { BoxWithStatus } from '@/types/database';
 
 const STATUS_LABEL: Record<BoxWithStatus['status'], string> = {
-  locked: 'Đang khóa',
+  locked: 'Đang niêm phong',
   ready: 'Sẵn sàng mở',
-  opened: 'Đã mở',
+  opened: 'Đã bóc',
 };
 
-const STATUS_ICON: Record<BoxWithStatus['status'], string> = {
-  locked: '🔒',
-  ready: '🔔',
-  opened: '📬',
-};
-
-/** Chỉ để hiển thị "còn bao lâu" cho hộp đang khóa — điều kiện mở thật sự luôn do server (status) quyết định. */
-function formatRemaining(openAt: string): string {
-  const diffMs = new Date(openAt).getTime() - Date.now();
-  if (diffMs <= 0) return 'Sắp đến giờ mở.';
-
-  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  if (days >= 1) return `Còn ${days} ngày nữa mới mở được.`;
-
-  const hours = Math.max(1, Math.floor(diffMs / (60 * 60 * 1000)));
-  return `Còn khoảng ${hours} giờ nữa mới mở được.`;
+function firstLine(text: string): string {
+  return text.split('\n')[0];
 }
 
-function formatOpenAt(openAt: string): string {
-  return new Date(openAt).toLocaleDateString('vi-VN');
+function openedMeta(box: BoxWithStatus): string | undefined {
+  if (!box.follow_up_question || box.follow_up_answer === null) return undefined;
+  return box.follow_up_answer ? 'ĐÃ TRẢ LỜI: CÓ' : 'ĐÃ TRẢ LỜI: CHƯA';
 }
 
 export default function BoxListScreen() {
@@ -42,24 +32,21 @@ export default function BoxListScreen() {
   const { loading, refreshing, offline, locked, ready, opened, refresh } = useBoxList(session?.user.id);
 
   const sections = [
-    { key: 'locked' as const, title: STATUS_LABEL.locked, data: locked },
     { key: 'ready' as const, title: STATUS_LABEL.ready, data: ready },
+    { key: 'locked' as const, title: STATUS_LABEL.locked, data: locked },
     { key: 'opened' as const, title: STATUS_LABEL.opened, data: opened },
   ].filter((section) => section.data.length > 0);
 
   const isEmpty = !loading && sections.length === 0;
 
   const handleBoxPress = (box: BoxWithStatus) => {
-    if (box.status === 'locked') {
-      Alert.alert('Hộp đang khóa', formatRemaining(box.open_at));
-      return;
-    }
     router.push(`/(app)/box/${box.id}`);
   };
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <AirmailStripe />
+      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <View style={styles.header}>
           <ThemedText type="title">Hộp của tôi</ThemedText>
           <Pressable onPress={signOut} hitSlop={8}>
@@ -68,14 +55,14 @@ export default function BoxListScreen() {
         </View>
 
         {offline ? (
-          <ThemedView type="backgroundElement" style={styles.offlineBanner}>
-            <ThemedText type="small">Đang offline - dữ liệu có thể chưa mới nhất</ThemedText>
+          <ThemedView type="paperDim" style={styles.offlineBanner}>
+            <ThemedText type="small">Đang offline — dữ liệu có thể chưa mới nhất</ThemedText>
           </ThemedView>
         ) : null}
 
         {isEmpty ? (
           <View style={styles.emptyState}>
-            <ThemedText type="default" themeColor="textSecondary" style={styles.emptyText}>
+            <ThemedText type="default" themeColor="ink2" style={styles.emptyText}>
               Chưa có hộp nào. Tạo hộp đầu tiên để gửi cho tương lai của bạn!
             </ThemedText>
             <Pressable onPress={() => router.push('/(app)/create-box')} style={styles.emptyCta}>
@@ -92,22 +79,16 @@ export default function BoxListScreen() {
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
             renderSectionHeader={({ section }) => (
-              <ThemedView style={styles.sectionHeader}>
-                <ThemedText type="smallBold">
-                  {section.title} ({section.data.length})
-                </ThemedText>
-              </ThemedView>
+              <SectionLabel label={section.title} count={section.data.length} />
             )}
             renderItem={({ item }) => (
-              <Pressable
+              <PaperCard
+                status={item.status}
+                title={firstLine(item.content_text)}
+                openAt={item.open_at}
+                meta={item.status === 'opened' ? openedMeta(item) : undefined}
                 onPress={() => handleBoxPress(item)}
-                style={[styles.card, item.status === 'locked' && styles.cardLocked]}
-              >
-                <ThemedText type="default">{STATUS_ICON[item.status]} {formatOpenAt(item.open_at)}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {STATUS_LABEL[item.status]}
-                </ThemedText>
-              </Pressable>
+              />
             )}
           />
         )}
@@ -134,13 +115,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
+    paddingTop: Spacing.three,
   },
   offlineBanner: {
     marginHorizontal: Spacing.four,
     marginTop: Spacing.two,
     padding: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
   },
   list: {
     flex: 1,
@@ -151,19 +132,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     maxWidth: MaxContentWidth,
-  },
-  sectionHeader: {
-    paddingVertical: Spacing.two,
-  },
-  card: {
-    padding: Spacing.three,
-    borderRadius: Spacing.two,
-    backgroundColor: '#F0F0F3',
-    marginBottom: Spacing.two,
-    gap: Spacing.half,
-  },
-  cardLocked: {
-    opacity: 0.7,
   },
   emptyState: {
     flex: 1,
@@ -176,13 +144,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyCta: {
-    backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
   emptyCtaLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontWeight: '600',
   },
   fab: {
@@ -191,13 +159,13 @@ const styles = StyleSheet.create({
     bottom: Spacing.five,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#208AEF',
+    borderRadius: Radius,
+    backgroundColor: Colors.blue,
     alignItems: 'center',
     justifyContent: 'center',
   },
   fabLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontSize: 28,
     lineHeight: 32,
   },

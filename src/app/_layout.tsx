@@ -1,28 +1,42 @@
 import { useEffect } from 'react';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
 
+import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 
 SplashScreen.preventAutoHideAsync();
 
+const AirmailNavigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: Colors.ground,
+    card: Colors.ground,
+    text: Colors.ink,
+    primary: Colors.blue,
+    border: Colors.rule,
+  },
+};
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const { session, initializing } = useAuth();
+  const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
+  const ready = !initializing && fontsLoaded;
 
   useEffect(() => {
-    if (!initializing) {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [initializing]);
+  }, [ready]);
 
-  if (initializing) {
+  if (!ready) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={AirmailNavigationTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(app)" />

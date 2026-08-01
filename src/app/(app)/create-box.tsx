@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useCreateBox, type CreateBoxPhoto } from '@/hooks/use-create-box';
 import {
@@ -107,7 +107,7 @@ export default function CreateBoxScreen() {
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {formError ? (
-            <ThemedView type="backgroundElement" style={styles.errorBanner}>
+            <ThemedView type="paperDim" style={styles.errorBanner}>
               <ThemedText type="small" style={styles.errorText}>
                 {formError}
               </ThemedText>
@@ -126,13 +126,15 @@ export default function CreateBoxScreen() {
               style={styles.textArea}
               placeholder="Viết điều gì đó cho chính mình trong tương lai..."
             />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.counter}>
+            <ThemedText type="monoLabel" themeColor="ink3" style={styles.counter}>
               {contentText.length}/{MAX_CONTENT_TEXT_LENGTH}
             </ThemedText>
           </View>
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Ngày mở</ThemedText>
+            <ThemedText type="smallBold" themeColor="ink2">
+              Ngày mở
+            </ThemedText>
             <DateTimePicker
               value={openAt}
               mode="date"
@@ -142,23 +144,23 @@ export default function CreateBoxScreen() {
           </View>
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Ảnh đính kèm (tùy chọn)</ThemedText>
+            <ThemedText type="smallBold" themeColor="ink2">
+              Ảnh đính kèm (tùy chọn)
+            </ThemedText>
             {photo ? (
               <View>
                 <Image source={{ uri: photo.uri }} style={styles.photoPreview} contentFit="cover" />
-                <Pressable
-                  onPress={() => setPhoto(null)}
-                  style={styles.removePhotoButton}
-                  hitSlop={8}
-                >
-                  <ThemedText type="smallBold" style={styles.removePhotoLabel}>
+                <Pressable onPress={() => setPhoto(null)} style={styles.removePhotoButton} hitSlop={8}>
+                  <ThemedText type="monoLabel" style={styles.removePhotoLabel}>
                     Xóa ảnh
                   </ThemedText>
                 </Pressable>
               </View>
             ) : (
               <Pressable onPress={handlePickImage} style={styles.addPhotoButton}>
-                <ThemedText type="default">+ Thêm ảnh</ThemedText>
+                <ThemedText type="default" themeColor="ink2">
+                  + Thêm ảnh
+                </ThemedText>
               </Pressable>
             )}
             {photoError ? (
@@ -169,8 +171,14 @@ export default function CreateBoxScreen() {
           </View>
 
           <View style={[styles.field, styles.followUpToggleRow]}>
-            <ThemedText type="smallBold">Thêm câu hỏi follow-up</ThemedText>
-            <Switch value={wantsFollowUp} onValueChange={setWantsFollowUp} />
+            <ThemedText type="smallBold" themeColor="ink2">
+              Thêm câu hỏi follow-up
+            </ThemedText>
+            <Switch
+              value={wantsFollowUp}
+              onValueChange={setWantsFollowUp}
+              trackColor={{ false: Colors.rule, true: Colors.blue }}
+            />
           </View>
 
           {wantsFollowUp ? (
@@ -190,7 +198,7 @@ export default function CreateBoxScreen() {
             style={[styles.submitButton, (submitting || !isFormValid) && styles.submitButtonDisabled]}
           >
             {submitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={Colors.paper} />
             ) : (
               <ThemedText type="default" style={styles.submitLabel}>
                 Lưu
@@ -237,42 +245,41 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#9AA0AC',
-    borderRadius: Spacing.two,
+    borderColor: Colors.ink3,
+    borderRadius: Radius,
     paddingVertical: Spacing.four,
     alignItems: 'center',
   },
   photoPreview: {
     width: '100%',
     height: 180,
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
   },
   removePhotoButton: {
     position: 'absolute',
     top: Spacing.two,
     right: Spacing.two,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.ink,
+    borderRadius: Radius,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
   },
   removePhotoLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
   },
   errorBanner: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
     padding: Spacing.three,
-    backgroundColor: '#fce8e6',
   },
   errorText: {
-    color: '#d92d20',
+    color: Colors.red,
   },
   error: {
-    color: '#d92d20',
+    color: Colors.red,
   },
   submitButton: {
-    backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius,
     paddingVertical: Spacing.three,
     alignItems: 'center',
     marginTop: Spacing.two,
@@ -281,7 +288,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontWeight: '600',
   },
 });

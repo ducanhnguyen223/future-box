@@ -3,20 +3,23 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LetterSheet } from '@/components/paper/letter-sheet';
+import { StampButton } from '@/components/paper/stamp-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useDeleteBox } from '@/hooks/use-box-actions';
 import { useOpenBox } from '@/hooks/use-open-box';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /** Chỉ để hiển thị "còn bao lâu" — điều kiện mở thật sự luôn do server (RPC open_box) quyết định. */
 function formatRemaining(openAt: string): string {
@@ -30,27 +33,32 @@ function formatRemaining(openAt: string): string {
   return `Còn khoảng ${hours} giờ nữa mới mở được.`;
 }
 
-// ponytail: Reanimated đã là dependency sẵn có (dùng ở Collapsible) — scale+opacity pulse
-// đơn giản là đủ cho hiệu ứng chúc mừng, không cần thêm lib confetti mới.
-function CelebrationOverlay() {
-  const scale = useSharedValue(0.6);
+/** Đóng dấu "ĐÃ TRẢ LỜI" khi chọn Yes — cùng nhịp stampDown 480ms/4 bước như PostmarkStamp. */
+function AnsweredStamp() {
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(reducedMotion ? 1 : 0);
 
   useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(withTiming(1.15, { duration: 400 }), withTiming(0.95, { duration: 400 })),
-      -1,
-      true
-    );
-  }, [scale]);
+    if (!reducedMotion) {
+      progress.value = withTiming(1, { duration: 480, easing: Easing.steps(4) });
+    }
+  }, [reducedMotion, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.6, 1], [0, 1, 1]),
+    transform: [
+      { scale: interpolate(progress.value, [0, 1], [1.9, 1]) },
+      { rotate: `${interpolate(progress.value, [0, 1], [-24, -8])}deg` },
+    ],
+  }));
 
   return (
-    <Animated.View entering={FadeIn.duration(300)} style={styles.celebrationOverlay}>
-      <Animated.Text style={[styles.celebrationEmoji, animatedStyle]}>🎉</Animated.Text>
-      <ThemedText type="title" style={styles.celebrationText}>
-        Chúc mừng!
-      </ThemedText>
+    <Animated.View entering={FadeIn.duration(150)} style={styles.celebrationOverlay}>
+      <Animated.View style={[styles.answeredStamp, animatedStyle]}>
+        <ThemedText type="monoLabel" style={styles.answeredStampLabel}>
+          Đã trả lời
+        </ThemedText>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -94,8 +102,8 @@ export default function BoxDetailScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
-        <ThemedText type="small" themeColor="textSecondary">
+        <ActivityIndicator size="large" color={Colors.blue} />
+        <ThemedText type="small" themeColor="ink3">
           Đang kiểm tra...
         </ThemedText>
       </ThemedView>
@@ -107,7 +115,9 @@ export default function BoxDetailScreen() {
       <ThemedView style={styles.centerContainer}>
         <ThemedText type="default">{fetchError ?? 'Không tìm thấy hộp này.'}</ThemedText>
         <Pressable onPress={() => router.back()} style={styles.secondaryButton}>
-          <ThemedText type="default">Quay lại</ThemedText>
+          <ThemedText type="default" themeColor="blue">
+            Quay lại
+          </ThemedText>
         </Pressable>
       </ThemedView>
     );
@@ -116,30 +126,23 @@ export default function BoxDetailScreen() {
   if (blocked) {
     return (
       <Animated.View entering={FadeIn.duration(200)} style={styles.centerContainerFlex}>
-        <ThemedText style={styles.lockIcon}>🔒</ThemedText>
+        <ThemedText type="monoLabel" themeColor="ink3">
+          Đang niêm phong
+        </ThemedText>
         <ThemedText type="default">{formatRemaining(box.open_at)}</ThemedText>
         <View style={styles.lockedActionsRow}>
-          <Pressable
-            onPress={() => router.push(`/(app)/box/${box.id}/edit`)}
+          <StampButton
+            label="Sửa"
+            variant="muted"
             disabled={deleting}
-            style={styles.editButton}
-          >
-            <ThemedText type="default" style={styles.editButtonLabel}>
-              Sửa
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={handleDelete} disabled={deleting} style={styles.deleteButton}>
-            {deleting ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <ThemedText type="default" style={styles.deleteButtonLabel}>
-                Xóa
-              </ThemedText>
-            )}
-          </Pressable>
+            onPress={() => router.push(`/(app)/box/${box.id}/edit`)}
+          />
+          <StampButton label="Xóa" variant="primary" disabled={deleting} loading={deleting} onPress={handleDelete} />
         </View>
         <Pressable onPress={() => router.back()} style={styles.secondaryButton}>
-          <ThemedText type="default">Quay lại</ThemedText>
+          <ThemedText type="default" themeColor="ink3">
+            Quay lại
+          </ThemedText>
         </Pressable>
       </Animated.View>
     );
@@ -154,49 +157,39 @@ export default function BoxDetailScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Animated.View entering={FadeIn.duration(400)} style={styles.contentCard}>
+          <LetterSheet>
             {attachmentUrl ? (
               <Image source={{ uri: attachmentUrl }} style={styles.photo} contentFit="cover" />
             ) : null}
             <ThemedText type="default">{box.content_text}</ThemedText>
-          </Animated.View>
+          </LetterSheet>
 
           {box.follow_up_question ? (
             <View style={styles.followUpBlock}>
               <ThemedText type="smallBold">{box.follow_up_question}</ThemedText>
 
               {wasAlreadyOpened || !needsFollowUpAnswer ? (
-                <ThemedView type="backgroundElement" style={styles.answerBadge}>
-                  <ThemedText type="default">{box.follow_up_answer ? 'Yes' : 'No'}</ThemedText>
+                <ThemedView type="paperDim" style={styles.answerBadge}>
+                  <ThemedText type="monoLabel" themeColor="ink3">
+                    {box.follow_up_answer ? 'ĐÃ TRẢ LỜI: CÓ' : 'ĐÃ TRẢ LỜI: CHƯA'}
+                  </ThemedText>
                 </ThemedView>
               ) : (
                 <View style={styles.answerRow}>
-                  <Pressable
+                  <StampButton
+                    label="Có"
+                    variant="primary"
+                    disabled={opening}
+                    loading={opening && pendingAnswer === true}
                     onPress={() => submitAnswer(true)}
+                  />
+                  <StampButton
+                    label="Chưa"
+                    variant="muted"
                     disabled={opening}
-                    style={[styles.answerButton, styles.answerButtonYes, opening && styles.answerButtonDisabled]}
-                  >
-                    {opening && pendingAnswer === true ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <ThemedText type="default" style={styles.answerButtonLabel}>
-                        Yes
-                      </ThemedText>
-                    )}
-                  </Pressable>
-                  <Pressable
+                    loading={opening && pendingAnswer === false}
                     onPress={() => submitAnswer(false)}
-                    disabled={opening}
-                    style={[styles.answerButton, styles.answerButtonNo, opening && styles.answerButtonDisabled]}
-                  >
-                    {opening && pendingAnswer === false ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <ThemedText type="default" style={styles.answerButtonLabel}>
-                        No
-                      </ThemedText>
-                    )}
-                  </Pressable>
+                  />
                 </View>
               )}
 
@@ -206,7 +199,9 @@ export default function BoxDetailScreen() {
                     {openError}
                   </ThemedText>
                   <Pressable onPress={retryOpen} style={styles.secondaryButton}>
-                    <ThemedText type="default">Thử lại</ThemedText>
+                    <ThemedText type="default" themeColor="blue">
+                      Thử lại
+                    </ThemedText>
                   </Pressable>
                 </View>
               ) : null}
@@ -223,7 +218,7 @@ export default function BoxDetailScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {justAnsweredYes ? <CelebrationOverlay /> : null}
+      {justAnsweredYes ? <AnsweredStamp /> : null}
     </ThemedView>
   );
 }
@@ -249,34 +244,11 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.four,
   },
-  lockIcon: {
-    fontSize: 48,
-  },
   lockedActionsRow: {
     flexDirection: 'row',
     gap: Spacing.three,
-  },
-  editButton: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
-    backgroundColor: '#208AEF',
-  },
-  editButtonLabel: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  deleteButton: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
-    backgroundColor: '#d92d20',
-    minWidth: 64,
-    alignItems: 'center',
-  },
-  deleteButtonLabel: {
-    color: '#ffffff',
-    fontWeight: '600',
+    alignSelf: 'stretch',
+    maxWidth: 320,
   },
   scrollContent: {
     paddingHorizontal: Spacing.four,
@@ -287,16 +259,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
   },
-  contentCard: {
-    gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.three,
-    backgroundColor: '#F0F0F3',
-  },
   photo: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
+    borderWidth: 1,
+    borderColor: Colors.rule,
   },
   followUpBlock: {
     gap: Spacing.three,
@@ -305,37 +273,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.three,
   },
-  answerButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
-  },
-  answerButtonYes: {
-    backgroundColor: '#208AEF',
-  },
-  answerButtonNo: {
-    backgroundColor: '#60646C',
-  },
-  answerButtonDisabled: {
-    opacity: 0.6,
-  },
-  answerButtonLabel: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
   answerBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
   },
   errorBlock: {
     gap: Spacing.two,
   },
   errorText: {
-    color: '#d92d20',
+    color: Colors.red,
   },
   secondaryButton: {
     alignSelf: 'center',
@@ -344,26 +292,34 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     alignSelf: 'center',
-    backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.six,
   },
   doneButtonLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontWeight: '600',
   },
   celebrationOverlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.three,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(35,32,25,0.55)',
   },
-  celebrationEmoji: {
-    fontSize: 96,
+  answeredStamp: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    borderColor: Colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.paper,
   },
-  celebrationText: {
-    color: '#ffffff',
+  answeredStampLabel: {
+    color: Colors.red,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

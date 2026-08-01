@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 
 type FormFieldProps = TextInputProps & {
   label: string;
@@ -12,20 +11,17 @@ type FormFieldProps = TextInputProps & {
 };
 
 export function FormField({ label, error, isPassword, style, ...rest }: FormFieldProps) {
-  const theme = useTheme();
   const [hidden, setHidden] = useState(isPassword);
 
   return (
     <View style={styles.container}>
-      <ThemedText type="smallBold">{label}</ThemedText>
+      <ThemedText type="smallBold" themeColor="ink2">
+        {label}
+      </ThemedText>
       <View style={styles.inputRow}>
         <TextInput
-          style={[
-            styles.input,
-            { color: theme.text, borderColor: error ? '#d92d20' : theme.backgroundSelected },
-            style,
-          ]}
-          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: error ? Colors.red : Colors.rule }, style]}
+          placeholderTextColor={Colors.ink3}
           secureTextEntry={hidden}
           autoCapitalize="none"
           autoCorrect={false}
@@ -33,8 +29,8 @@ export function FormField({ label, error, isPassword, style, ...rest }: FormFiel
         />
         {isPassword && (
           <Pressable onPress={() => setHidden((value) => !value)} hitSlop={8} style={styles.toggle}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {hidden ? 'Hiện' : 'Ẩn'}
+            <ThemedText type="mono" themeColor="ink3">
+              {hidden ? 'HIỆN' : 'ẨN'}
             </ThemedText>
           </Pressable>
         )}
@@ -58,17 +54,20 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    backgroundColor: Colors.paper,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    fontFamily: Fonts.serif,
     fontSize: 16,
+    color: Colors.ink,
   },
   toggle: {
     position: 'absolute',
     right: Spacing.three,
   },
   error: {
-    color: '#d92d20',
+    color: Colors.red,
   },
 });

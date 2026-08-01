@@ -4,9 +4,10 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FormField } from '@/components/form-field';
+import { AirmailStripe } from '@/components/paper/airmail-stripe';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginScreen() {
@@ -36,6 +37,7 @@ export default function LoginScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <AirmailStripe />
       <SafeAreaView style={styles.safeArea}>
         <ThemedText type="title" style={styles.title}>
           FutureBoxes
@@ -45,7 +47,7 @@ export default function LoginScreen() {
         </ThemedText>
 
         {formError ? (
-          <ThemedView type="backgroundElement" style={styles.errorBanner}>
+          <ThemedView type="paperDim" style={styles.errorBanner}>
             <ThemedText type="small" style={styles.errorText}>
               {formError}
             </ThemedText>
@@ -67,7 +69,7 @@ export default function LoginScreen() {
           style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
         >
           {submitting ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={Colors.paper} />
           ) : (
             <ThemedText type="default" style={styles.submitLabel}>
               Đăng nhập
@@ -102,19 +104,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    fontSize: 20,
   },
   errorBanner: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
     padding: Spacing.three,
-    backgroundColor: '#fce8e6',
   },
   errorText: {
-    color: '#d92d20',
+    color: Colors.red,
   },
   submitButton: {
-    backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius,
     paddingVertical: Spacing.three,
     alignItems: 'center',
   },
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontWeight: '600',
   },
   link: {

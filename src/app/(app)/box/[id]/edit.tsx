@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useEditBox } from '@/hooks/use-box-actions';
 import {
   isFutureOpenAt,
@@ -108,7 +108,7 @@ export default function EditBoxScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={Colors.blue} />
       </ThemedView>
     );
   }
@@ -118,7 +118,9 @@ export default function EditBoxScreen() {
       <ThemedView style={styles.centerContainer}>
         <ThemedText type="default">{loadError ?? 'Không tìm thấy hộp này.'}</ThemedText>
         <Pressable onPress={() => router.back()} style={styles.secondaryButton}>
-          <ThemedText type="default">Quay lại</ThemedText>
+          <ThemedText type="default" themeColor="blue">
+            Quay lại
+          </ThemedText>
         </Pressable>
       </ThemedView>
     );
@@ -129,7 +131,7 @@ export default function EditBoxScreen() {
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {formError ? (
-            <ThemedView type="backgroundElement" style={styles.errorBanner}>
+            <ThemedView type="paperDim" style={styles.errorBanner}>
               <ThemedText type="small" style={styles.errorText}>
                 {formError}
               </ThemedText>
@@ -148,13 +150,15 @@ export default function EditBoxScreen() {
               style={styles.textArea}
               placeholder="Viết điều gì đó cho chính mình trong tương lai..."
             />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.counter}>
+            <ThemedText type="monoLabel" themeColor="ink3" style={styles.counter}>
               {contentText.length}/{MAX_CONTENT_TEXT_LENGTH}
             </ThemedText>
           </View>
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Ngày mở</ThemedText>
+            <ThemedText type="smallBold" themeColor="ink2">
+              Ngày mở
+            </ThemedText>
             <DateTimePicker
               value={openAt}
               mode="date"
@@ -164,8 +168,14 @@ export default function EditBoxScreen() {
           </View>
 
           <View style={[styles.field, styles.followUpToggleRow]}>
-            <ThemedText type="smallBold">Thêm câu hỏi follow-up</ThemedText>
-            <Switch value={wantsFollowUp} onValueChange={setWantsFollowUp} />
+            <ThemedText type="smallBold" themeColor="ink2">
+              Thêm câu hỏi follow-up
+            </ThemedText>
+            <Switch
+              value={wantsFollowUp}
+              onValueChange={setWantsFollowUp}
+              trackColor={{ false: Colors.rule, true: Colors.blue }}
+            />
           </View>
 
           {wantsFollowUp ? (
@@ -185,7 +195,7 @@ export default function EditBoxScreen() {
             style={[styles.submitButton, (submitting || !isFormValid) && styles.submitButtonDisabled]}
           >
             {submitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={Colors.paper} />
             ) : (
               <ThemedText type="default" style={styles.submitLabel}>
                 Lưu thay đổi
@@ -237,12 +247,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   errorBanner: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius,
     padding: Spacing.three,
-    backgroundColor: '#fce8e6',
   },
   errorText: {
-    color: '#d92d20',
+    color: Colors.red,
   },
   secondaryButton: {
     alignSelf: 'center',
@@ -250,8 +259,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   submitButton: {
-    backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius,
     paddingVertical: Spacing.three,
     alignItems: 'center',
     marginTop: Spacing.two,
@@ -260,7 +269,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitLabel: {
-    color: '#ffffff',
+    color: Colors.paper,
     fontWeight: '600',
   },
 });

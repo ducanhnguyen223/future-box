@@ -26,7 +26,23 @@ jest.mock('@/components/themed-view', () => {
   return { ThemedView: ({ children, ...props }: { children: React.ReactNode }) => <View {...props}>{children}</View> };
 });
 
-jest.mock('@/constants/theme', () => ({ MaxContentWidth: 800, Spacing: { half: 2, two: 8, three: 12, four: 16 } }));
+jest.mock('@/constants/theme', () => ({
+  MaxContentWidth: 800,
+  Spacing: { half: 2, two: 8, three: 12, four: 16, five: 24, six: 32 },
+  Radius: 2,
+  Colors: {
+    ground: '#E9E4D6',
+    paper: '#F6F2E7',
+    paperDim: '#EFEADB',
+    ink: '#232019',
+    ink2: '#5C5445',
+    ink3: '#8A7C63',
+    rule: '#D6CDB6',
+    ruleSoft: '#DDD4BE',
+    blue: '#1F4E79',
+    red: '#B33A2B',
+  },
+}));
 
 import RegisterScreen from '@/app/(auth)/register';
 
